@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Flash Chat</title>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa, #e2e8f0);
+            padding: 20px;
+            color: #333;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body.dark-theme {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: white;
+        }
+
+        /* Header */
+        .header {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        body.dark-theme .theme-toggle {
+            background: rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+
+        body.dark-theme .theme-toggle:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Chat Container */
+        #chat-container {
+            width: 90%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            overflow-y: auto;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        body.dark-theme #chat-container {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        /* Message Styling */
+        .message {
+            padding: 18px;
+            border-radius: 20px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 16px;
+            line-height: 1.6;
+            position: relative;
+            animation: fadeIn 0.4s ease-in-out;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .message:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .user {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            align-self: flex-end;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .bot {
+            background: linear-gradient(135deg, #f1f1f1, #e0e0e0);
+            color: black;
+            align-self: flex-start;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-theme .bot {
+            background: linear-gradient(135deg, #e0e0e0, #f1f1f1);
+        }
+
+        /* Timestamp */
+        .timestamp {
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.7);
+            margin-top: 5px;
+        }
+
+        body.dark-theme .timestamp {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Message Actions */
+        .message-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .message-actions button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 10px;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .message-actions button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        body.dark-theme .message-actions button {
+            background: rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+
+        body.dark-theme .message-actions button:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Input Container */
+        #input-container {
+            display: flex;
+            gap: 15px;
+            width: 90%;
+            max-width: 900px;
+            margin-top: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 18px;
+            border-radius: 20px;
+            border: none;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            outline: none;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        input:focus {
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.3);
+            transform: scale(1.02);
+        }
+
+        button {
+            padding: 18px 30px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #ff9800, #e68900);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #e68900, #d17a00);
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ff9800;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translateX(-50%) rotate(0deg); }
+            100% { transform: translateX(-50%) rotate(360deg); }
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: none;
+            font-size: 14px;
+            color: rgba(0, 0, 0, 0.7);
+            margin-top: 10px;
+        }
+
+        body.dark-theme .typing-indicator {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scrollbar Styling */
+        #chat-container::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #chat-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #chat-container {
+                width: 95%;
+                padding: 20px;
+            }
+
+            #input-container {
+                width: 95%;
+            }
+
+            input {
+                padding: 15px;
+            }
+
+            button {
+                padding: 15px 25px;
+            }
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <div class="header">
+        <h1>Gemini Flash Chat</h1>
+        <button class="theme-toggle" id="theme-toggle">Toggle Theme</button>
+    </div>
+    <div id="chat-container">
+        <div class="loading-spinner" id="loading-spinner"></div>
+        <div class="typing-indicator" id="typing-indicator">Bot is typing...</div>
+    </div>
+    <div id="input-container">
+        <input type="text" id="user-input" placeholder="Type a message..." maxlength="500">
+        <button id="send-button">Send</button>
+    </div>
+
+    <script>
+        const API_KEY = "AIzaSyCszAfgDYPAm8YWqQM8qF3sdOfYbo_LBMs"; // Replace with your Gemini Flash API key
+        const chatContainer = document.getElementById("chat-container");
+        const userInput = document.getElementById("user-input");
+        const sendButton = document.getElementById("send-button");
+        const loadingSpinner = document.getElementById("loading-spinner");
+        const typingIndicator = document.getElementById("typing-indicator");
+        const themeToggle = document.getElementById("theme-toggle");
+
+        // Set default theme to light
+        let isDarkTheme = false;
+        document.body.classList.add("light-theme");
+
+        // Load theme preference from localStorage
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+            toggleTheme();
+        }
+
+        // Event listener for the send button
+        sendButton.addEventListener("click", sendMessage);
+
+        // Event listener for Enter key
+        userInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        // Event listener for theme toggle
+        themeToggle.addEventListener("click", toggleTheme);
+
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle("dark-theme", isDarkTheme);
+            localStorage.setItem("theme", isDarkTheme ? "dark" : "light");
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            const timestamp = new Date().toLocaleTimeString();
+            displayMessage(message, "user", timestamp);
+            userInput.value = "";
+            loadingSpinner.style.display = "block";
+            typingIndicator.style.display = "block";
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: message }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+                const data = await response.json();
+                const reply = (data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from AI.").trim(); // Trim whitespace
+                const replyTimestamp = new Date().toLocaleTimeString();
+                displayMessage(reply, "bot", replyTimestamp);
+            } catch (error) {
+                console.error("Error:", error);
+                displayMessage(`Error: ${error.message}`, "bot", new Date().toLocaleTimeString());
+            } finally {
+                loadingSpinner.style.display = "none";
+                typingIndicator.style.display = "none";
+            }
+        }
+
+        function displayMessage(message, sender, timestamp) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", sender);
+
+            const messageText = document.createElement("div");
+            messageText.textContent = message;
+            messageDiv.appendChild(messageText);
+
+            const timestampDiv = document.createElement("div");
+            timestampDiv.classList.add("timestamp");
+            timestampDiv.textContent = timestamp;
+            messageDiv.appendChild(timestampDiv);
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
